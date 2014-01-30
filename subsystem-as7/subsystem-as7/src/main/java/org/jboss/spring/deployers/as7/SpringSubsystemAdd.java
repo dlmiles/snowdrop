@@ -52,7 +52,10 @@ public class SpringSubsystemAdd extends AbstractBoottimeAddStepHandler {
         log.info("Activating Spring Deployer subsystem");
         operationContext.addStep(new AbstractDeploymentChainStep() {
             protected void execute(DeploymentProcessorTarget bootContext) {
-                bootContext.addDeploymentProcessor(Phase.STRUCTURE, Phase.STRUCTURE_JBOSS_DEPLOYMENT_STRUCTURE_DESCRIPTOR + 1, new SpringStructureProcessor());
+                // Was: Phase.STRUCTURE_JBOSS_DEPLOYMENT_STRUCTURE_DESCRIPTOR+1=0x1820+1, but label got removed and changed to
+                //      Phase.STRUCTURE_JBOSS_DEPLOYMENT_STRUCTURE+0x20+1==0x1800+0x20+1 so we preserve historic order by adding 0x20.
+                // This change occurred between AS7/EAP6 and WildFly8 (commit-id:28dd460).
+                bootContext.addDeploymentProcessor(Phase.STRUCTURE, Phase.STRUCTURE_JBOSS_DEPLOYMENT_STRUCTURE + 0x20 + 1, new SpringStructureProcessor());
                 bootContext.addDeploymentProcessor(Phase.PARSE, Phase.PARSE_DEPENDENCIES_MANIFEST, new SpringDependencyProcessor());
                 bootContext.addDeploymentProcessor(Phase.INSTALL, Integer.MAX_VALUE, new SpringBootstrapProcessor());
             }

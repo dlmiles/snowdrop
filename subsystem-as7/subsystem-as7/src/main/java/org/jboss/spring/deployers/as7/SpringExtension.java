@@ -40,18 +40,21 @@ import org.jboss.as.controller.OperationContext;
 //import org.jboss.as.controller.OperationDefinition;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
+import org.jboss.as.controller.SimpleOperationDefinition;
+import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 //import org.jboss.as.controller.ResourceBuilder;
 //import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.SubsystemRegistration;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
-import org.jboss.as.controller.descriptions.common.CommonDescriptions;
+import org.jboss.as.controller.descriptions.StandardResourceDescriptionResolver;
 import org.jboss.as.controller.parsing.ExtensionParsingContext;
 import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.as.controller.persistence.SubsystemMarshallingContext;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
 import org.jboss.logging.Logger;
 import org.jboss.staxmapper.XMLElementReader;
 import org.jboss.staxmapper.XMLElementWriter;
@@ -68,7 +71,7 @@ public class SpringExtension implements Extension {
     public static final String SUBSYSTEM_NAME = "spring";
 
     public static final String NAMESPACE = "urn:jboss:domain:snowdrop:1.0";
-    
+
     private static final int MANAGEMENT_API_MAJOR_VERSION = 1;
     private static final int MANAGEMENT_API_MINOR_VERSION = 2;
     private static final int MANAGEMENT_API_MICRO_VERSION = 0;
@@ -102,7 +105,16 @@ public class SpringExtension implements Extension {
 //            return SpringDescriptionProviders.getSubsystemDescription(locale);
 //        }
 //    };
-    
+
+    private static final String RESOURCE_NAME = SpringExtension.class.getPackage().getName() + ".LocalDescriptions";
+    static StandardResourceDescriptionResolver getResourceDescriptionResolver(final String... keyPrefix) {
+        StringBuilder prefix = new StringBuilder(SUBSYSTEM_NAME);
+        for (String kp : keyPrefix) {
+            prefix.append('.').append(kp);
+        }
+        return new StandardResourceDescriptionResolver(prefix.toString(), RESOURCE_NAME, SpringExtension.class.getClassLoader());
+    }
+
     private static ModelNode createAddSubSystemOperation() {
         final ModelNode subsystem = new ModelNode();
         subsystem.get(OP).set(ADD);
@@ -164,15 +176,22 @@ public class SpringExtension implements Extension {
 
         static final SpringSubsystemDescribeHandler INSTANCE = new SpringSubsystemDescribeHandler();
 
+        static final SimpleOperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder(DESCRIBE, SpringExtension.getResourceDescriptionResolver())
+                .setReplyType(ModelType.LIST)
+                .setReplyValueType(ModelType.OBJECT)
+                .setPrivateEntry()
+                .build();
+
         @Override
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             context.getResult().add(createAddSubSystemOperation());
-            context.completeStep();
+            context.stepCompleted();
         }
 
         @Override
         public ModelNode getModelDescription(Locale locale) {
-            return CommonDescriptions.getSubsystemDescribeOperation(locale);
+            return DEFINITION.getDescriptionProvider().getModelDescription(locale);
         }
     }
+
 }
